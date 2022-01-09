@@ -1,0 +1,15 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: [deploy_name]-pdb
+  namespace: [deploy_ns]
+  annotations:
+    meta.helm.sh/release-name: [deploy_name]
+    meta.helm.sh/release-namespace: [deploy_ns]
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+[deploy_labels]
