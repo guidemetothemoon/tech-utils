@@ -42,7 +42,7 @@ kubectl logs -l component=controller -n ingress-temp -f # Monitor traffic in tem
 $dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
 
 # Check in the DNS zone how many records are there that are connected to the original IC's IP
-$cluster_dns_recs = $dns_recs | convertfrom-json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $original_ingress_ip}
+$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $original_ingress_ip}
 $cluster_dns_recs.count
 
 $cluster_dns_recs | ForEach-Object -Parallel {
@@ -55,7 +55,7 @@ $cluster_dns_recs | ForEach-Object -Parallel {
 $dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
 
 # Verify that there are no more DNS records that are connected to the original IC's IP
-$cluster_dns_recs = $dns_recs | convertfrom-json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $original_ingress_ip}
+$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $original_ingress_ip}
 $cluster_dns_recs.count # Should be 0 by now
 
 # Now wait for all traffic to be drained from original IC and moved to the temp IC
@@ -90,7 +90,7 @@ $new_ingress_ip = "00.00.00.000" # Public IP of newly created Ingress Controller
 $dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
 
 # Check in the DNS zone how many records are there that are connected to the temp IC's IP
-$cluster_dns_recs = $dns_recs | convertfrom-json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip}
+$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip}
 $cluster_dns_recs.count
 
 $cluster_dns_recs | ForEach-Object -Parallel {
@@ -103,7 +103,7 @@ $cluster_dns_recs | ForEach-Object -Parallel {
 $dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
 
 # Verify that there are no more DNS records that are connected to the temp IC's IP
-$cluster_dns_recs = $dns_recs | convertfrom-json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip}
+$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip}
 $cluster_dns_recs.count # Should be 0 by now
 
 # Now wait for all traffic to be drained from temp IC and moved to the new IC
