@@ -13,7 +13,6 @@ param (
 )
 
 $global:DebugPreference = "Continue";
-
 function Update-DNS()
 {
     param
@@ -25,6 +24,7 @@ function Update-DNS()
 	)
 
     # Get DNS records pointing to the IC IP that is about to be removed
+    Write-Debug "Retrieving DNS records for $DnsZoneName..."
     $dns_recs = Get-DnsRecs -DnsZoneName $DnsZoneName -DnsResourceGroup $DnsResourceGroup -IpToCheck $IpToRemove
     
     while ($dns_recs.count -ne 0)
@@ -32,23 +32,25 @@ function Update-DNS()
         Write-Debug "Updating DNS records..."
         $dns_recs | ForEach-Object -Parallel {
             $DebugPreference = "Continue";
-            Write-Debug "Removing $($using:IpToRemove) $($_.name) IP $($_.arecords.ipv4Address) with updated Ingress Controller External IP $($using:IpToAdd)"
-            az network dns record-set a add-record --resource-group $using:DnsResourceGroup --zone-name $using:DnsZoneName --record-set-name $_.name --ipv4-address $using:IpToAdd
-            az network dns record-set a remove-record --resource-group $using:DnsResourceGroup --zone-name $using:DnsZoneName --record-set-name $_.name --ipv4-address $using:IpToRemove
+            Write-Debug "Updating IP of the DNS record $($_.Name) -> $($_.IP) with External IP of the new Ingress Controller -> $($using:IpToAdd)"
+            az network dns record-set a add-record --resource-group $using:DnsResourceGroup --zone-name $using:DnsZoneName --record-set-name $_.Name --ipv4-address $using:IpToAdd
+            az network dns record-set a remove-record --resource-group $using:DnsResourceGroup --zone-name $using:DnsZoneName --record-set-name $_.Name --ipv4-address $using:IpToRemove
         } -ThrottleLimit 3 # here you can customize parallel threads count based on how many records you have but I wouldn't recommend to use more that 15 depending on how resourceful your system is
         
+        Write-Debug "DNS records are updated - checking if there are any dangling records that must be updated..."
         # We need to check if any new DNS records were added pointing on the to-be-removed IP while we were updating DNS records so that we don't leave any DNS records dangling
         $dns_recs = Get-DnsRecs -DnsZoneName $DnsZoneName -DnsResourceGroup $DnsResourceGroup -IpToCheck $IpToRemove
     }
     
     # Now wait for all traffic to be drained from original IC and moved to the new IC - check DNS resolution in the meantime to confirm that all DNS records are updated
-    Write-Debug "Waiting for DNS records to be resolved to new IP..."
+    Write-Debug "Getting DNS records for the new IP to verify DNS resolution..."
     $updated_dns_recs = Get-DnsRecs -DnsZoneName $DnsZoneName -DnsResourceGroup $DnsResourceGroup -IpToCheck $IpToAdd
 
     do
     {
+        Write-Debug "Waiting for DNS records to be resolved to new IP..."
         # Get DNS records that point to the new IP but are still being resolved to the old IP
-        $dns_resolution_res = $updated_dns_recs | Where-Object { (Resolve-DnsName -Name $_.fqdn).IPAddress -eq $IpToRemove }
+        $dns_resolution_res = $updated_dns_recs | Where-Object { (Resolve-DnsName -Name $_.FQDN).IPAddress -eq $IpToRemove }
         
         if($dns_resolution_res.Count -ne 0)
         {
@@ -57,8 +59,7 @@ function Update-DNS()
         }
     }
     while($dns_resolution_res.Count -ne 0)
-    Write-Debug "All DNS records have now been resolved!"
-    
+    Write-Debug "All DNS records have now been resolved!"    
 }  
 
 function Get-DnsRecs()
@@ -70,8 +71,7 @@ function Get-DnsRecs()
         [Parameter(Mandatory=$true)][string]$IpToCheck
 	)
 
-    $all_dns_recs = az network dns record-set a list -g $DnsResourceGroup -z $DnsZoneName
-    $dns_recs_to_update = $all_dns_recs | ConvertFrom-Json -Depth 4 | Where-Object { $_.arecords.ipv4Address -eq $IpToCheck }
+    $dns_recs_to_update = az network dns record-set a list -g $DnsResourceGroup -z $DnsZoneName --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$IpToCheck')]" | ConvertFrom-Json
     Write-Debug "Found $($dns_recs_to_update.count) DNS records using IP $IpToCheck in DNS zone $DnsZoneName..."
 
     return $dns_recs_to_update
@@ -86,7 +86,7 @@ function Get-Ingress-Pip()
 
     # Get external IP of the newly created Ingress Controller (service of type LoadBalancer in $temp_ingress_ns namespace)
     $retryCount = 0
-    $ingress_ip
+    $ingress_ip = ""
 
     do {
 
@@ -126,11 +126,11 @@ k config use-context $ClusterId
 $temp_ingress_ns = "ingress-temp"
 $create_temp_ingress_ns = $null -eq (k get ns $temp_ingress_ns --ignore-not-found=true)
 
-if ($create_temp_ingress_ns) 
+if ($create_temp_ingress_ns)
 {
     Write-Debug "ingress-temp namespace doesn't exist - creating..."
 }
-else 
+else
 {
     Write-Debug "ingress-temp namespace already exists - creating another namespace..."
     $ns_guid = (New-Guid).Guid.Substring(0, 8)
@@ -152,12 +152,13 @@ Write-Debug "Creating temporary NGINX Ingress Controller based on the old Helm c
 helm upgrade nginx-ingress-temp stable/nginx-ingress --install --namespace $temp_ingress_ns --set controller.config.proxy-buffer-size="32k" --set controller.config.large-client-header-buffers="4 32k" --set controller.replicaCount=2 --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux --set controller.metrics.service.annotations."prometheus\.io/port"="10254" --set controller.metrics.service.annotations."prometheus\.io/scrape"="true" --set controller.metrics.enabled=true --version=1.41.2 
 
 Write-Debug "Retrieving External IP of the original and temporary Ingress Controller... "
-$original_ingress_ip = k get svc -n ingress-basic --output jsonpath='{.items[?(@.spec.type contains 'LoadBalancer')].status.loadBalancer.ingress[0].ip}' # get External IP of original Ingress Controller - it's deployed to ingress-basic namespace by default
+
+$original_ingress_ip= Get-Ingress-Pip -IngressNs "ingress-basic"
 Write-Debug "External IP of the original Ingress Controller is $original_ingress_ip"
 
 # Get external IP of the newly created Ingress Controller (service of type LoadBalancer in $temp_ingress_ns namespace)
-$temp_ingress_ip = Get-Ingress-Pip($temp_ingress_ns)
-
+$temp_ingress_ip = Get-Ingress-Pip -IngressNs $temp_ingress_ns
+Write-Debug "External IP of the temporary Ingress Controller is $temp_ingress_ip"
 
 # Commands to monitor traffic in both Ingress Controllers to identify when the traffic is only routed to the temporary IC so that the original IC can be taken offline
 # For manual check of traffic flow in original and temporary Ingress Controller
@@ -178,7 +179,7 @@ Write-Debug "Uninstalling original NGINX IC and deploying an updated version to 
 helm uninstall nginx-ingress -n ingress-basic
 helm upgrade nginx-ingress ingress-nginx/ingress-nginx --install --create-namespace --namespace ingress-basic --set controller.config.proxy-buffer-size="32k" --set controller.config.large-client-header-buffers="4 32k" --set controller.replicaCount=2 --set controller.nodeSelector."kubernetes\.io/os"=linux --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux --set-string controller.metrics.service.annotations."prometheus\.io/port"="10254" --set-string controller.metrics.service.annotations."prometheus\.io/scrape"="true" --set controller.metrics.enabled=true --set controller.service.loadBalancerIP=$cluster_lb_ip #you can also remove loadBalancerIP if you don't want new Ingress Controller to use Azure Load Balancer's Public IP - then new external IP will be generated automatically for this new IC
 
-Get-Ingress-Pip("ingress-basic")
+Get-Ingress-Pip -IngressNs "ingress-basic"
 
 # Commands to monitor the newly created Ingress Controller since the initial one was removed in previous step - be aware that the Kubernetes label for in new NGINX Ingress Controller template has changed!
 # For manual check of traffic flow in original and temporary Ingress Controller:
