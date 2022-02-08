@@ -39,23 +39,19 @@ kubectl logs -l component=controller -n ingress-temp -f # Monitor traffic in tem
 # Please note: for even further automation, the code that is used to retrieve, filter and update DNS records can be moved out to a separate function to avoid duplication.
 # Since this script is aimed for educating purposes, I've consciously duplicated the steps instead of creating a separate function
 
-$dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
-
 # Check in the DNS zone how many records are there that are connected to the original IC's IP
-$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $original_ingress_ip}
+$cluster_dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$original_ingress_ip')]" | ConvertFrom-Json
 $cluster_dns_recs.count
 
 $cluster_dns_recs | ForEach-Object -Parallel {
-	Write-Output "Updating $($_.name) IP $($_.arecords.ipv4Address) with updated Ingress Controller External IP $using:temp_ingress_ip"
+	Write-Output "Updating $($_.Name) IP $($_.IP) with updated Ingress Controller External IP $using:temp_ingress_ip"
 	#az network dns record-set a add-record --resource-group myresourcegroup --zone-name mydnszone.com --record-set-name $_.name --ipv4-address  $using:temp_ingress_ip
     #az network dns record-set a remove-record --resource-group myresourcegroup --zone-name mydnszone.com --record-set-name $_.name --ipv4-address $using:original_ingress_ip
 } -ThrottleLimit 3 # here you can customize parallel threads count based on how many records you have but I wouldn't recommend to use more that 15 depending on how resourceful your system is
 
-# Once you've updated DNS records you will need to load them again
-$dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
-
+# Once you've updated DNS records you will need to load them again.
 # Verify that there are no more DNS records that are connected to the original IC's IP
-$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $original_ingress_ip}
+$cluster_dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$original_ingress_ip')]" | ConvertFrom-Json
 $cluster_dns_recs.count # Should be 0 by now
 
 # Now wait for all traffic to be drained from original IC and moved to the temp IC
@@ -63,12 +59,13 @@ $cluster_dns_recs.count # Should be 0 by now
 
 # For few exisitng DNS records - check what those are resolved to
 foreach($dnsrec in $cluster_dns_recs) {
-	$res = Resolve-DnsName -Name $dnsrec.fqdn
+	$res = Resolve-DnsName -Name $dnsrec.FQDN
 	Write-Output $res
 }
 
 # For large amount of DNS records - Faster check if all the DNS records have been properly updated
-$dns_resolv_Res = $dns_recs | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip -and (Resolve-DnsName -Name $_.fqdn).IPAddress -ne $temp_ingress_ip}
+$dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$temp_ingress_ip')]" | ConvertFrom-Json
+$dns_resolv_Res = $dns_recs | Where-Object {(Resolve-DnsName -Name $_.FQDN).IPAddress -ne $temp_ingress_ip}
 
 # 5 - Once DNS records were updated and all traffic has been re-routed to temp IC, uninstall original Ingress Controller with Helm and install new Ingress Controller with Helm
 # In this case new Ingress Controller is configured to use Public IP of Azure Load Balancer and not create a new IP
@@ -87,23 +84,20 @@ kubectl logs -l component=controller -n ingress-temp -f # Temporary IC, should s
 $new_ingress_ip = "00.00.00.000" # Public IP of newly created Ingress Controller
 
 #Update DNS records to route traffic to temp Ingress Controller
-$dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
-
 # Check in the DNS zone how many records are there that are connected to the temp IC's IP
-$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip}
+
+$cluster_dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$temp_ingress_ip')]" | ConvertFrom-Json
 $cluster_dns_recs.count
 
 $cluster_dns_recs | ForEach-Object -Parallel {
-	Write-Output "Updating $($_.name) IP $($_.arecords.ipv4Address) with updated Ingress Controller External IP $using:new_ingress_ip"
-	az network dns record-set a add-record --resource-group myresourcegroup --zone-name mydnszone.com --record-set-name $_.name --ipv4-address  $using:new_ingress_ip
-    az network dns record-set a remove-record --resource-group myresourcegroup --zone-name mydnszone.com --record-set-name $_.name --ipv4-address $using:temp_ingress_ip
+	Write-Output "Updating $($_.Name) IP $($_.IP) with updated Ingress Controller External IP $using:new_ingress_ip"
+	az network dns record-set a add-record --resource-group myresourcegroup --zone-name mydnszone.com --record-set-name $_.Name --ipv4-address  $using:new_ingress_ip
+    az network dns record-set a remove-record --resource-group myresourcegroup --zone-name mydnszone.com --record-set-name $_.Name --ipv4-address $using:temp_ingress_ip
 } -ThrottleLimit 3 # here you can customize parallel threads count based on how many records you have but I wouldn't recommend to use more that 15 depending on how resourceful your system is
 
 # Once you've updated DNS records you will need to load them again
-$dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com
-
 # Verify that there are no more DNS records that are connected to the temp IC's IP
-$cluster_dns_recs = $dns_recs | ConvertFrom-Json -Depth 4 | Where-Object {$_.arecords.ipv4Address -eq $temp_ingress_ip}
+$cluster_dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$temp_ingress_ip')]" | ConvertFrom-Json
 $cluster_dns_recs.count # Should be 0 by now
 
 # Now wait for all traffic to be drained from temp IC and moved to the new IC
@@ -111,13 +105,13 @@ $cluster_dns_recs.count # Should be 0 by now
 
 # For few exisitng DNS records - check what those are resolved to
 foreach($dnsrec in $cluster_dns_recs) {
-	$res = Resolve-DnsName -Name $dnsrec.fqdn
+	$res = Resolve-DnsName -Name $dnsrec.FQDN
 	Write-Output $res
 }
 
 # For large amount of DNS records - Faster check if all the DNS records have been properly updated
-$dns_resolv_Res = $dns_recs | Where-Object {$_.arecords.ipv4Address -eq $new_ingress_ip -and (Resolve-DnsName -Name $_.fqdn).IPAddress -ne $new_ingress_ip}
-
+$dns_recs = az network dns record-set a list -g myresourcegroup -z mydnszone.com --query "[].{Name:name, FQDN:fqdn, IP:aRecords[].ipv4Address}[?contains(IP[],'$new_ingress_ip')]" | ConvertFrom-Json
+$dns_resolv_Res = $dns_recs | Where-Object {(Resolve-DnsName -Name $_.fqdn).IPAddress -ne $new_ingress_ip}
 
 # 8 - Remove temp resources once traffic is drained from temporary IC and newly created IC is fully in use and successfully running in respective Kubernetes cluster
 helm uninstall nginx-ingress-temp -n ingress-temp
