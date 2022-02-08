@@ -123,4 +123,4 @@ $dns_resolv_Res = $dns_recs | Where-Object {$_.arecords.ipv4Address -eq $new_ing
 helm uninstall nginx-ingress-temp -n ingress-temp
 k delete ns ingress-temp
 
-# Final step, after all clusters are upgraded - remove DNS record for any test applications you might have created like the one from this Microsoft tutorial:
+# Final step, after all clusters are upgraded - remove DNS record for any test applications you might have created like the one from this Microsoft tutorial: https://docs.microsoft.com/en-us/azure/aks/ingress-basic
