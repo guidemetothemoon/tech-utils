@@ -2,7 +2,8 @@
 # but it can be easily adjusted to any other Kubernetes infrastructure as well.
 
 # Before doing the upgrade, make a note of following information:
-# Ensure that the command shell session is allowed to execute Azure commands (az login command to your service ;))
+# - Ensure that you're using latest version of Azure CLI and PowerShell 7.0 or newer (due to usage of parallel execution)
+# - Ensure that the command shell session is allowed to execute Azure commands (az login command to your service ;))
 
 param (    
     [Parameter(Mandatory = $true)] [string]$ClusterId, # Id of the Kubernetes cluster where Ingress Controller is deployed
