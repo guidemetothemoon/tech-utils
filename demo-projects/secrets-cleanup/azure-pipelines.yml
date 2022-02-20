@@ -1,0 +1,29 @@
+
+name: $(BuildDefinitionName)_$(date:yyyyMMdd)_$(Build.SourceBranchName)$(rev:.r)
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Release_Production
+  variables:  
+  - name: TESTAPPURL
+    value: 'https://mytestapp.dev.com'
+  - name: CLIENTID
+    value: '5ff4ff61-2caf-4676-a9e6-7b5e7f5e5b24'
+  - name: CLIENTSECRET
+    value: '54614838-b267-4276-a423-f2915160bc70'
+  jobs:
+  - deployment: Deploy_TestApp_Production
+    environment: testapp-prod.testapp-prod
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - template: build-templates/init-deployment.yml
