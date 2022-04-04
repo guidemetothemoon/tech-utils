@@ -120,6 +120,11 @@ function Update-TargetFrameworks($projectToUpdate)
     Write-Verbose "Updated $projectName"
 }
 
+if(-not (Test-Path $ProjectLocation))
+{
+    throw "Project location $ProjectLocation doesn't exist! Please ensure that a correct path to your project files is provided."
+}
+
 $projectsToUpdate = Get-ChildItem -Path $ProjectLocation -Recurse -ErrorAction SilentlyContinue -Include *.csproj, *.vbproj -Exclude $ProjectsToExclude | Select-Object FullName
 
 
