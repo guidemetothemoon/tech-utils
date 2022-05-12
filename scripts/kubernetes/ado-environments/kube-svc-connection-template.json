@@ -1,0 +1,29 @@
+{
+    "data": {
+        "authorizationType": "AzureSubscription",
+        "azureSubscriptionId": "[SubscriptionId]",
+        "azureSubscriptionName": "[SubscriptionName]",
+        "clusterId": "[ClusterId]",
+        "namespace": "[Namespace]",
+        "operation.createNamespace": "[CreateNamespace]"
+    },
+    "name": "[ConnectionName]",
+    "type": "kubernetes",
+    "url": "[ClusterUrl]",
+    "authorization": {
+        "scheme": "Kubernetes",
+        "parameters": {
+            "azureEnvironment": "AzureCloud",
+            "azureTenantId": "[TenantId]"
+        }
+    },
+    "serviceEndpointProjectReferences": [
+        {
+            "name": "[ConnectionName]",
+            "projectReference": {
+                "id": "[ProjectId]",
+                "name": "[ProjectName]"
+            }
+        }
+    ]
+}
