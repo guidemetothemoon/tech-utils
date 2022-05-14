@@ -4,8 +4,7 @@
         "azureSubscriptionId": "[SubscriptionId]",
         "azureSubscriptionName": "[SubscriptionName]",
         "clusterId": "[ClusterId]",
-        "namespace": "[Namespace]",
-        "operation.createNamespace": "[CreateNamespace]"
+        "namespace": "[Namespace]"
     },
     "name": "[ConnectionName]",
     "type": "kubernetes",
