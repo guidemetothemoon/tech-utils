@@ -86,8 +86,13 @@ function Get-TargetEnvironmentId()
 
 # This function will generate a new service connection in order to create new Kubernetes resource in target environment.
 # If service connection for this resource already exists, the function will return it's ID.
-function New-SvcConnection($resourceNamespace)
+function New-SvcConnection()
 {
+    Param
+    (
+        [Parameter(Mandatory=$true)][string]$ResourceNamespace
+    )
+
     Write-Debug "Generating service connection for new resource..."   
 
     # First, gather the information that's required by Azure DevOps REST API in order to create a new service connection for Kubernetes
@@ -98,10 +103,10 @@ function New-SvcConnection($resourceNamespace)
     $targetClusterUrl = [uri]"https://$($targetClusterInfo.fqdn)"
     Write-Debug "Target cluster URL is: $($targetClusterUrl.AbsoluteUri)"
 
-    $svcConnectionName = "$TargetEnvironmentName-$TargetClusterName-$resourceNamespace"
+    $svcConnectionName = "$TargetEnvironmentName-$TargetClusterName-$ResourceNamespace"
 
     # Verify that service connection for current resource and Kubernetes cluster doesn't already exist. If it does, re-use it.
-    $existingSvcConnectionId = Get-SvcConnectionIfExists -endpointName $svcConnectionName
+    $existingSvcConnectionId = Get-SvcConnectionIfExists -EndpointName $svcConnectionName
     
     if($null -ne $existingSvcConnectionId)
     {
@@ -119,7 +124,7 @@ function New-SvcConnection($resourceNamespace)
     $adoProjectIdResult = (Invoke-RestMethod -Uri $adoProjectIdUrl -Method GET -Headers $authHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).value | Where-Object {$_.name -eq $adoProjectName}
     
     kubectl config set-context $targetClusterInfo.name | Out-Null
-    $ns = kubectl get namespace $resourceNamespace
+    $ns = kubectl get namespace $ResourceNamespace
 
     # Populate JSON object based on the template with retrieved values for new service connection
     Write-Debug "Replacing placeholders for service connection template"
@@ -130,7 +135,7 @@ function New-SvcConnection($resourceNamespace)
 			$_  -replace "\[SubscriptionId\]", $SubscriptionId `
 				-replace "\[SubscriptionName\]", $subscriptionName `
 				-replace "\[ClusterId\]", $targetClusterInfo.id `
-                -replace "\[Namespace\]", $resourceNamespace `
+                -replace "\[Namespace\]", $ResourceNamespace `
 				-replace "\[ConnectionName\]", $svcConnectionName `
 				-replace "\[ClusterUrl\]", $targetClusterUrl `
                 -replace "\[TenantId\]", $TenantId `
@@ -157,9 +162,14 @@ function New-SvcConnection($resourceNamespace)
 }
 
 # This function will check if service connection with current name already exists in Azure DevOps. If it does, it's ID will be returned.
-function Get-SvcConnectionIfExists($endpointName)
+function Get-SvcConnectionIfExists()
 {
-    $getSvcConnectionUrl = [uri]"$($AzureDevOpsUrl.Trim("/"))/_apis/serviceendpoint/endpoints?endpointNames=$endpointName&$AzureDevOpsApiVersion"
+    Param
+    (
+        [Parameter(Mandatory=$true)]$EndpointName
+    )
+
+    $getSvcConnectionUrl = [uri]"$($AzureDevOpsUrl.Trim("/"))/_apis/serviceendpoint/endpoints?endpointNames=$EndpointName&$AzureDevOpsApiVersion"
     Write-Debug "URL to get service connection for Kubernetes resource: $getSvcConnectionUrl. Calling..."
     $getSvcConnectionResult = Invoke-RestMethod -Uri $getSvcConnectionUrl -Method GET -Headers $authHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30
 
@@ -172,11 +182,17 @@ function Get-SvcConnectionIfExists($endpointName)
 }
 
 # This function checks if the AKS resource already exists in respective Azure DevOps Environment
-function Test-ResourceExists($environmentId, $resourceName)
+function Test-ResourceExists()
 {
-    $resourcesUrl = $AzureDevOpsUrl + "/_apis/distributedtask/environments/$($environmentId)?expands=resourceReferences&$AzureDevOpsApiVersion"
-    Write-Debug "Checking if resource $resourceName exists in Azure DevOps environment with id: $environmentId. Calling url: $resourcesUrl"
-    $resourcesResult = (Invoke-RestMethod -Uri $resourcesUrl -Method GET -Headers $authHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).resources | Where-Object {$_.name -eq $resourceName}
+    Param
+    (
+        [Parameter(Mandatory=$true)]$EnvironmentId,
+		[Parameter(Mandatory=$true)]$ResourceName
+    )
+
+    $resourcesUrl = $AzureDevOpsUrl + "/_apis/distributedtask/environments/$($EnvironmentId)?expands=resourceReferences&$AzureDevOpsApiVersion"
+    Write-Debug "Checking if resource $ResourceName exists in Azure DevOps environment with id: $EnvironmentId. Calling url: $resourcesUrl"
+    $resourcesResult = (Invoke-RestMethod -Uri $resourcesUrl -Method GET -Headers $authHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).resources | Where-Object {$_.name -eq $ResourceName}
 
     if($resourcesResult.count -eq 0)
     {        
@@ -207,7 +223,7 @@ foreach($resource in $sourceEnvironment.resources)
 
     Write-Debug "Check if Kubernetes resource already exists in target environment..."
 
-    if(Test-ResourceExists -environmentId $targetEnvironmentId -resourceName $resource.name)
+    if(Test-ResourceExists -EnvironmentId $targetEnvironmentId -ResourceName $resource.name)
     {
         Write-Debug "Resource $($resource.name) already exists in $TargetEnvironmentName! Skipping..."
         continue
@@ -223,7 +239,7 @@ foreach($resource in $sourceEnvironment.resources)
     if($null -ne $TargetClusterName)
     {
         $resourceCluster = $TargetClusterName
-        $svcConnectionId = New-SvcConnection -resourceNamespace $kubeResourceResult.namespace
+        $svcConnectionId = New-SvcConnection -ResourceNamespace $kubeResourceResult.namespace
     }
 
     $requestObject = @{
