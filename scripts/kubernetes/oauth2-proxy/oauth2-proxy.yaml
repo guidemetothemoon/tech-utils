@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: [ApplicationName]-oauth2-proxy
+    app.kubernetes.io/managed-by: Helm
+  name: [ApplicationName]-oauth2-proxy-deployment
+  namespace: [Namespace]
+  annotations:
+    meta.helm.sh/release-name: [ApplicationName]
+    meta.helm.sh/release-namespace: [Namespace]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: [ApplicationName]-oauth2-proxy
+  template:
+    metadata:
+      labels:
+        application: [ApplicationName]-oauth2-proxy
+    spec:
+      containers:
+      - args:
+        - --provider=azure
+        - --azure-tenant=[TenantId]
+        - --pass-access-token=true
+        - --cookie-name=[CookieName]
+        - --email-domain=*
+        - --upstream=file:///dev/null
+        - --http-address=0.0.0.0:4180
+        name: [ApplicationName]-oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.2.1
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: client-id
+              key: oauth2_proxy_client_id
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: client-secret
+              key: oauth2_proxy_client_secret
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cookie-secret
+              key: oauth2_proxy_cookie_secret
+        ports:
+        - containerPort: 4180
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    application: [ApplicationName]-oauth2-proxy
+    app.kubernetes.io/managed-by: Helm
+  name: [ApplicationName]-oauth2-proxy-svc
+  namespace: [Namespace]
+  annotations:
+    meta.helm.sh/release-name: [ApplicationName]
+    meta.helm.sh/release-namespace: [Namespace]
+spec:
+  ports:
+  - name: http
+    port: 4180
+    protocol: TCP
+    targetPort: 4180
+  selector:
+    application: [ApplicationName]-oauth2-proxy
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: [CertClusterIssuerName]
+    meta.helm.sh/release-name: [ApplicationName]
+    meta.helm.sh/release-namespace: [Namespace]
+  name: [ApplicationName]-oauth2-ingress
+  namespace: [Namespace]
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - [KubecostHostname]
+      secretName: [ApplicationName]-oauth2-ingress-tls-secret
+  rules:
+    - host: [KubecostHostname]
+      http:
+        paths:
+          - path: /oauth2
+            pathType: Prefix
+            backend:
+              service:
+                name: [ApplicationName]-oauth2-proxy-svc
+                port:
+                  number: 4180
