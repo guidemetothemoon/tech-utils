@@ -39,11 +39,11 @@ kubectl create secret generic cookie-secret --from-literal=oauth2_proxy_cookie_s
 |  ForEach-Object `
 	{ `
 		$_  -replace "\[ApplicationName\]", $applicationName `
-			-replace "\[ApplicationNamespace\]", $applicationNamespace `
-			-replace "\[TenantId\]", $tenantId `
-            -replace "\[CookieName\]", $cookieName `
-			-replace "\[CertClusterIssuerName\]", $clusterIssuerName `
-			-replace "\[ApplicationHostname\]", $applicationHostname `
+		    -replace "\[ApplicationNamespace\]", $applicationNamespace `
+		    -replace "\[TenantId\]", $tenantId `
+                    -replace "\[CookieName\]", $cookieName `
+		    -replace "\[CertClusterIssuerName\]", $clusterIssuerName `
+		    -replace "\[ApplicationHostname\]", $applicationHostname `
 	} `
 | Set-Content "$tempOutputPath/oauth2-proxy.yaml" -Encoding UTF8
 
