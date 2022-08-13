@@ -1,0 +1,40 @@
+# This template can be used to create a pipeline/stage/job in Azure DevOps that will run Pluto which is an open-source tool that scans the source code and provide report of deprecated and to-be-removed Kubernetes APIs that are currently in use.
+# See more details here about the tool: https://github.com/FairwindsOps/pluto
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+resources:
+  repositories: #check out those repositories that you want to scan with Pluto
+  - repository: [repository_name]
+    type: git
+    name: [project_name/repository_name]
+    ref: master  
+
+steps:
+- checkout: self
+  submodules: true
+  persistCredentials: true
+- checkout: '[repository_name]'
+  submodules: true
+  persistCredentials: true
+
+- task: CmdLine@2
+  displayName: 'Install Pluto' # update Pluto version if needed in wget and tar command
+  inputs:
+    script: |
+      sudo apt-get update
+
+      echo Downloading Pluto...
+      wget github.com/FairwindsOps/pluto/releases/download/v5.10.1/pluto_5.10.1_linux_amd64.tar.gz
+      tar xzvf pluto_5.10.1_linux_amd64.tar.gz
+      echo Pluto downloaded successfully!
+
+- task: Bash@3
+  displayName: 'Run Kubernetes API deprecations validation with Pluto'
+  inputs:
+    filePath: '$(System.DefaultWorkingDirectory)/validate-kube-api-deprecations.sh'
+    arguments: '$(System.DefaultWorkingDirectory)' # This argument lets the script know the location for checked out repos
