@@ -33,3 +33,13 @@ spec:
   - port: 80
   selector:
     app: aks-helloworld-one
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: aks-helloworld-one-pdb
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      app: aks-helloworld-one
