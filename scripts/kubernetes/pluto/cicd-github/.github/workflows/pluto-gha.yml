@@ -1,0 +1,21 @@
+name: pluto-gha
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  pluto-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Pluto
+        uses: FairwindsOps/pluto/github-action@master
+
+      - name: Run Kubernetes API deprecations validation with Pluto
+        run: |
+          pluto detect-files -d scripts/kubernetes/pluto/cicd-github/yaml-templates
+          helm template "scripts/kubernetes/pluto/cicd-github/helm/testapp" -f "values.yaml" | pluto detect - -o markdown
