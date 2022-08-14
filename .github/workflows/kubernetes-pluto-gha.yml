@@ -17,8 +17,8 @@ jobs:
 
       - name: Run Kubernetes API deprecations validation with Pluto
         run: |
-          echo Pluto scan non-Helm resources...
+          printf "\nPluto scan non-Helm resources...\n"
           pluto detect-files -d scripts/kubernetes/pluto/cicd-github/yaml-templates -o markdown --ignore-deprecations --ignore-removals
           
-          echo Pluto scan Helm charts...
+          printf "\nPluto scan Helm charts...\n"
           helm template "scripts/kubernetes/pluto/cicd-github/helm/testapp" -f "scripts/kubernetes/pluto/cicd-github/helm/testapp/values.yaml" | pluto detect - -o markdown --ignore-deprecations --ignore-removals
