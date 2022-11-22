@@ -21,18 +21,28 @@ $actionChoices = '&Yes', '&No'
 
 az login
 
-$kubeContexts = [System.Collections.ArrayList](kubectl config get-contexts | Select-Object -Skip 1) # Remove column names, keep only value rows
+$kubeContexts = [System.Collections.ArrayList]@()
+kubectl config get-contexts | Select-Object -Skip 1 | ForEach-Object {$kubeContexts += $_} # Remove column names, keep only value rows
+
 $azSubscriptions = az account subscription list | ConvertFrom-Json 
-$allAKSClustersArrayList = New-Object -TypeName "System.Collections.ArrayList"
+$allAKSClustersArrayList = [System.Collections.ArrayList]@()
 
 foreach($subscription in $azSubscriptions)
 {
     Write-Debug "Getting AKS clusters in subscription $($subscription.displayName)..."
 
     az account set --name $subscription.subscriptionId
-    $aksClusters = az aks list | ConvertFrom-Json | ForEach-Object {$allAKSClustersArrayList.Add($_.name)}
+    $aksClusters = az aks list | ConvertFrom-Json
+    
+    if($aksClusters.count -eq 0)
+    {
+        Write-Debug "No AKS clusters exist in subscription $($subscription.displayName) - skipping..."
+        continue
+    }
 
     Write-Debug "Found $($aksClusters.count) AKS clusters - added to the list."
+    $aksClusters | ForEach-Object {$allAKSClustersArrayList.Add($_.name)}
+    
 }
 
 foreach ($kubeContext in $kubeContexts)
@@ -46,7 +56,7 @@ foreach ($kubeContext in $kubeContexts)
         continue
     }
 
-    $userQuestion = "Cluster no longer exists or is not an AKS cluster - Do you want to remove  $($kubeContextParsed[1]) context?"
+    $userQuestion = "Cluster no longer exists or is not an AKS cluster - Do you want to remove $($kubeContextParsed[1]) context?"
     $userChoice = $Host.UI.PromptForChoice($confirmPromptTitle, $userQuestion, $actionChoices, 1)
     
     if ($userChoice -ne 0)
@@ -56,12 +66,12 @@ foreach ($kubeContext in $kubeContexts)
     }
     
     Write-Host "Your choice is Yes - deleting $($kubeContextParsed[1]) context..."
-    kubectl unset contexts.$kubeContextParsed[1]
+    kubectl config unset contexts.$($kubeContextParsed[1])
     
     if($FullCleanup)
     {
         Write-Debug "Full cleanup is enabled - deleting cluster and user information from kubeconfig file..."
-        kubectl unset clusters.$kubeContextParsed[2] && kubectl unset users.$kubeContextParsed[3]
+        kubectl config unset clusters.$($kubeContextParsed[2]) && kubectl config unset users.$($kubeContextParsed[3])
     }
 
     Write-Debug "$($kubeContextParsed[1]) context removed!"
