@@ -9,6 +9,8 @@
     "name": "[ConnectionName]",
     "type": "kubernetes",
     "url": "[ClusterUrl]",
+    "isReady": "true",
+    "isShared": "false",
     "authorization": {
         "scheme": "Kubernetes",
         "parameters": {
