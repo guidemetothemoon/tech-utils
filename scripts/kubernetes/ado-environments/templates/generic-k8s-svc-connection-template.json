@@ -1,0 +1,28 @@
+{
+    "data": {
+        "authorizationType": "ServiceAccount",
+        "acceptUntrustedCerts":	"[AcceptUntrustedCerts]"
+    },
+    "name": "[ConnectionName]",
+    "type": "kubernetes",
+    "url": "[ClusterUrl]",
+    "isReady": "true",
+    "isShared": "false",
+    "authorization": {
+        "scheme": "Token",        
+        "parameters": {
+            "isCreatedFromSecretYaml": false,
+            "ApiToken":	"[ApiToken]",
+            "serviceAccountCertificate": "[ServiceAccountCertificate]"
+        }
+    },
+    "serviceEndpointProjectReferences": [
+        {
+            "name": "[ConnectionName]",
+            "projectReference": {
+                "id": "[ProjectId]",
+                "name": "[ProjectName]"
+            }
+        }
+    ]
+}
