@@ -42,6 +42,9 @@ Param(
 )
 
 $global:DebugPreference = "Continue";
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
 Import-Module "$PSScriptRoot/modules/Manage-Ado-Environment.psm1" -Force # If you have saved psm1 module somewhere else, please update the file path
 
 $user = ""

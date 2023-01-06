@@ -37,6 +37,9 @@ Param(
 )
 
 $global:DebugPreference = "Continue";
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
 Import-Module "$PSScriptRoot/modules/Manage-Ado-Environment.psm1" -Force # If you have saved psm1 module somewhere else, please update the file path
 
 $user = ""
@@ -61,7 +64,7 @@ foreach($resource in $sourceEnvironmentResources.resources)
     
     $kubeResource = Get-ADO-Environment-Kubernetes-Resource -AzureDevOpsUrl $AzureDevOpsURL -EnvironmentId $sourceEnvironment.id -ResourceId $resource.id -AuthHeader $authHeader
     
-    if($null -eq $kubeResource)
+    if(-not $kubeResource)
     {
         Write-Debug "This resource doesn't seem to exist anymore - skipping..."
         continue
@@ -70,7 +73,7 @@ foreach($resource in $sourceEnvironmentResources.resources)
     $resourceSvcConnectionId = $kubeResource.serviceEndpointId
     $resourceKubeCluster = $kubeResource.clusterName
 
-    if($null -ne $TargetClusterName)
+    if($TargetClusterName)
     {
         Write-Debug "Create Azure DevOps Kubernetes Service Connection that will be used by the Resource $($resource.name) targeting new cluster $TargetClusterName..."
         $resourceKubeCluster = $TargetClusterName

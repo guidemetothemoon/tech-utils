@@ -4,6 +4,8 @@
 # You can start using the module once you import it with Import-Module <path_to_psm1_file>, f.ex.: Import-Module "./modules/Manage-Ado-Environment.psm1"
 
 $global:DebugPreference = "Continue";
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
 
 # Create new Azure DevOps Environment with the provided name.
 function New-ADO-Environment()
@@ -34,9 +36,8 @@ function New-ADO-Environment()
     $environmentObject = $environmentObject | ConvertTo-Json
     $environmentUrl = [uri]"$($AzureDevOpsUrl.Trim("/"))/_apis/distributedtask/environments?name=$EnvironmentName&$AzureDevOpsApiVersion"
     Write-Debug "URL to create Azure DevOps Environment: $environmentUrl. Calling..."
-
     $adoEnvironment = Invoke-RestMethod -Uri $environmentUrl -Method POST -Headers $AuthHeader -Body $environmentObject -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30
-
+    
     Write-Debug "Azure DevOps Environment $EnvironmentName created!"
 
     return $adoEnvironment
@@ -70,13 +71,13 @@ function Get-ADO-Environment()
     $environmentUrl = [uri]"$($AzureDevOpsUrl.Trim("/"))/_apis/distributedtask/environments?name=$EnvironmentName&$AzureDevOpsApiVersion"
     Write-Debug "URL to get details about Azure DevOps Environment: $environmentUrl. Calling..."
     $adoEnvironment = (Invoke-RestMethod -Uri $environmentUrl -Method GET -Headers $AuthHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).value
-
-    if($adoEnvironment.count -eq 0 -and -not $CreateIfNotExists)
+    
+    if(-not $adoEnvironment -and -not $CreateIfNotExists)
     {
-        Write-Debug "Azure DevOps Environment $EnvironmentName doesn't exist! Please create Azure DevOps Environment or run the script with CreateIfNotExists switch"
+        Write-Error "Azure DevOps Environment $EnvironmentName doesn't exist! Please create Azure DevOps Environment or run the script with CreateIfNotExists switch"
         exit 1
     }
-    elseif ($adoEnvironment.count -eq 0 -and $CreateIfNotExists) 
+    elseif (-not $adoEnvironment -and $CreateIfNotExists) 
     {
         Write-Debug "Azure DevOps Environment $EnvironmentName doesn't exist! Creating..."
         $adoEnvironment = New-ADO-Environment -AzureDevOpsURL $AzureDevOpsUrl -EnvironmentName $EnvironmentName -AuthHeader $AuthHeader -EnvironmentDescription $EnvironmentDescription
@@ -157,7 +158,7 @@ function Get-ADO-Environment-Resources
     Write-Debug "URL to retrieve all resources connected to the Azure DevOps Environment: $adoEnvironmentResourcesUrl."
     $adoEnvironmentResources = (Invoke-RestMethod -Uri $adoEnvironmentResourcesUrl -Method GET -Headers $AuthHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30)
 
-    if($adoEnvironmentResources.resources.count -eq 0)
+    if(-not $adoEnvironmentResources.resources)
     {
         Write-Debug "No resources found for Azure DevOps Environment with ID $EnvironmentId. Exiting..."
         return $null
@@ -191,7 +192,7 @@ function Get-ADO-Environment-Kubernetes-Resource
     Write-Debug "URL to get details about ADO Environment Kubernetes Resource: $adoEnvironmentResourceUrl. Calling..."
     $adoEnvironmentResource = Invoke-RestMethod -Uri $adoEnvironmentResourceUrl -Method GET -Headers $AuthHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30
     
-    if($adoEnvironmentResource.count -eq 0)
+    if(-not $adoEnvironmentResource)
     {
         Write-Debug "No Azure DevOps Kubernetes Resource with ID $ResourceId found in Azure DevOps Environment with ID $EnvironmentId!"
         return $null
@@ -222,7 +223,7 @@ function Get-SvcConnection
     Write-Debug "URL to get service connection for Kubernetes resource: $svcConnectionUrl. Calling..."
     $svcConnection = (Invoke-RestMethod -Uri $svcConnectionUrl -Method GET -Headers $AuthHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).value
 
-    if($svcConnection.count -eq 0)
+    if(-not $svcConnection)
     {
         Write-Debug "Service connection $ServiceConnectionName doesn't exist!"
         return $null
@@ -277,7 +278,7 @@ function New-Service-Connection
     # Verify that service connection for current resource and Kubernetes cluster doesn't already exist. If it does, re-use it.
     $existingSvcConnection = Get-SvcConnection -AzureDevOpsUrl $AzureDevOpsUrl -ServiceConnectionName $svcConnectionName -AuthHeader $AuthHeader
     
-    if($null -ne $existingSvcConnection)
+    if($existingSvcConnection)
     {
         Write-Debug "Service connection with name $svcConnectionName already exists - returning service connection id: $existingSvcConnection..."
         return $existingSvcConnection
@@ -293,12 +294,19 @@ function New-Service-Connection
     $adoProjectIdResult = (Invoke-RestMethod -Uri $adoProjectIdUrl -Method GET -Headers $AuthHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).value | Where-Object {$_.name -eq $adoProjectName}
     
     kubectl config use-context $KubernetesClusterName | Out-Null
-    $kubeNamespace = kubectl get namespace $KubernetesResourceNamespace
     
-    if($kubeNamespace.Count -eq 0)
+    if($LASTEXITCODE -ne 0)
+    {
+        Write-Error "Can't connect to Kubernetes cluster! Please check that your connection is properly set up."
+        exit 1
+    }
+
+    $kubeNamespace = kubectl get namespace $KubernetesResourceNamespace --ignore-not-found=true
+    
+    if(-not $kubeNamespace)
     {
         Write-Debug "Kubernetes Namespace $KubernetesResourceNamespace doesn't exist - creating..."
-        kubectl create namespace $KubernetesResourceNamespace
+        kubectl create namespace $KubernetesResourceNamespace | Out-Null
     }
 
     if($UseGenericProvider)
@@ -355,6 +363,13 @@ function New-AKS-Service-Connection-Object
     )
 
     kubectl config use-context $KubernetesClusterName | Out-Null
+    
+    if($LASTEXITCODE -ne 0)
+    {
+        Write-Error "Can't connect to Kubernetes cluster! Please check that your connection is properly set up."
+        exit 1
+    }
+
     az account set --subscription $SubscriptionId
 
     $kubernetesCluster = az aks list | ConvertFrom-Json | Where-Object { $_.name -eq $KubernetesClusterName }
@@ -489,20 +504,27 @@ function New-Kubernetes-ServiceAccount
     | Set-Content "$tempOutputPath/rolebinding.yml" -Encoding UTF8
 
     kubectl config use-context $KubernetesClusterName | Out-Null
-    Write-Debug "Checking if Kubernetes Namespace exists..."
-    $kubernetesNamespace = kubectl get namespace $KubernetesResourceNamespace
+    
+    if($LASTEXITCODE -ne 0)
+    {
+        Write-Error "Can't connect to Kubernetes cluster! Please check that your connection is properly set up."
+        exit 1
+    }
 
-    if($kubernetesNamespace.Count -eq 0)
+    Write-Debug "Checking if Kubernetes Namespace exists..."
+    $kubernetesNamespace = kubectl get namespace $KubernetesResourceNamespace --ignore-not-found=true
+
+    if(-not $kubernetesNamespace)
     {
         Write-Debug "Kubernetes Namespace $KubernetesResourceNamespace doesn't exist - creating..."
-        kubectl create namespace $KubernetesResourceNamespace
+        kubectl create namespace $KubernetesResourceNamespace | Out-Null
     }
 
     Write-Debug "Creating respective Kubernetes resources in $KubernetesResourceNamespace namespace..."
 
-    kubectl apply -f "$tempOutputPath/serviceaccount.yml"
-    kubectl apply -f "$tempOutputPath/secret.yml"
-    kubectl apply -f "$tempOutputPath/rolebinding.yml"
+    kubectl apply -f "$tempOutputPath/serviceaccount.yml" | Out-Null
+    kubectl apply -f "$tempOutputPath/secret.yml" | Out-Null
+    kubectl apply -f "$tempOutputPath/rolebinding.yml" | Out-Null
 
     Write-Debug "ServiceAccount $ServiceAccountName with Secret and RoleBinding created in $KubernetesResourceNamespace!"
 }
@@ -532,7 +554,7 @@ function Test-ADO-Kubernetes-Resource-Exists
     Write-Debug "Checking if resource $ResourceName exists in Azure DevOps environment with id: $EnvironmentId. Calling url: $adoResourcesUrl"
     $adoResource = (Invoke-RestMethod -Uri $adoResourcesUrl -Method GET -Headers $AuthHeader -ContentType 'application/json' -MaximumRedirection 0 -MaximumRetryCount 3 -RetryIntervalSec 30).resources | Where-Object {$_.name -eq $ResourceName}
 
-    if($adoResource.count -eq 0)
+    if(-not $adoResource)
     {
         Write-Debug "Resource $ResourceName doesn't exist in Azure DevOps Environment with ID $EnvironmentId"
         return $false
