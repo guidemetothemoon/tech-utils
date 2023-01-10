@@ -14,7 +14,7 @@ Param(
   [string]$ApplicationNamespace, # Namespace that OAuth2 Proxy will be deployed to
   
   [Parameter(Mandatory = $true)]
-  [uri]$ApplicationUrl, # Application public URL to use for creating redirect URI, for example "https://myappurl.com"
+  [string]$ApplicationUrl, # Application public URL to use for creating redirect URI, for example "https://myappurl.com"
   
   [Parameter(Mandatory = $true)]
   [string]$TenantId, # Azure AD tenant ID where to create OAuth2 Proxy application
@@ -68,7 +68,7 @@ function Get-CookieSecret() {
 
 
 $applicationHostname= $ApplicationUrl.Host
-$appRedirectUri = "$ApplicationUrl/oauth2/callback"
+$appRedirectUri = [uri]"$ApplicationUrl/oauth2/callback"
 $tempOutputPath = [System.IO.Path]::GetTempPath()
 
 az login --tenant $TenantId --allow-no-subscriptions
@@ -77,7 +77,7 @@ if($CreateAzureADApp)
 {
 	Write-Debug "Creating OAuth2 Proxy application in Azure AD tenant with ID: $TenantId"
 	
-	$applicationADApp = az ad app create --display-name $ApplicationName --sign-in-audience AzureADMyOrg --web-redirect-uris $appRedirectUri | ConvertFrom-Json
+	$applicationADApp = az ad app create --display-name $ApplicationName --sign-in-audience AzureADMyOrg --web-redirect-uris $appRedirectUri.AbsoluteUri | ConvertFrom-Json
 	$ClientId = $applicationADApp.appId
 	$ClientSecret = $(az ad app credential reset --id $ClientId --append --display-name "$ApplicationName-client-secret" --end-date $ClientSecretExpirationDate --query password --output tsv)
 	
