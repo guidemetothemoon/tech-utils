@@ -56,16 +56,16 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 function Get-CookieSecret() {
-	$length = 32
+    $length = 32
     $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&*+-:;=?@[]^_{|}'
     $cookieSecret = ''
+    
     for ($i = 0; $i -lt $length; $i++) {
         $cookieSecret += $chars[(Get-Random -Minimum 0 -Maximum ($chars.length - 1))]
     }
+    
     return $cookieSecret
 }
-
-
 
 $applicationHostname= $ApplicationUrl.Host
 $appRedirectUri = [uri]"$ApplicationUrl/oauth2/callback"
