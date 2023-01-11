@@ -3,8 +3,11 @@ This folder contains a collection of templates, PowerShell modules and scripts t
 Please see detailed explanation and guides in these blog posts:
 
 [Continuous Delivery to AKS With Azure DevOps Environments - Part 1](https://kristhecodingunicorn.com/post/k8s_ado_envs-1)
+
 [Continuous Delivery to AKS With Azure DevOps Environments - Part 2](https://kristhecodingunicorn.com/post/k8s_ado_envs-2)
+
 [Re-Using Azure DevOps Environment Efficiently Across Multiple Pipelines](https://kristhecodingunicorn.com/techtips/ado_env_as_var)
+
 [How to Fix ServiceAccount Error in Azure DevOps Environments for Kubernetes Clusters V.1.24 and Newer](https://kristhecodingunicorn.com/techtips/ado_sa_error)
 
 ```New-ADO-K8s-Resources.ps1```
