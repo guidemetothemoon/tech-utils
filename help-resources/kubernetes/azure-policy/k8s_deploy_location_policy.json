@@ -1,0 +1,49 @@
+{
+    "properties": {
+      "displayName": "Create AKS clusters only in North Europe",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "This policy will enforce creation of AKS clusters only in North Europe location.",
+      "metadata": {
+        "category": "Kubernetes",
+        "createdBy": "REDACTED",
+        "createdOn": "REDACTED",
+        "updatedBy": null,
+        "updatedOn": null
+      },
+      "parameters": {},
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "type",
+              "in": [
+                "Microsoft.Kubernetes/connectedClusters",
+                "Microsoft.ContainerService/managedClusters"
+              ]
+            },
+            {
+              "field": "location",
+              "notIn": [
+                "northeurope"
+              ]
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    },
+    "id": "/subscriptions/SUBSCIPTION_ID/providers/Microsoft.Authorization/policyDefinitions/POLICY_DEFINITION_ID",
+    "type": "Microsoft.Authorization/policyDefinitions",
+    "name": "POLICY_DEFINITION_ID",
+    "systemData": {
+      "createdBy": "REDACTED",
+      "createdByType": "User",
+      "createdAt": "REDACTED",
+      "lastModifiedBy": "REDACTED",
+      "lastModifiedByType": "User",
+      "lastModifiedAt": "REDACTED"
+    }
+  }
