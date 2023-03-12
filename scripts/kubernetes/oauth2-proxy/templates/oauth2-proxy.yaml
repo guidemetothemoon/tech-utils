@@ -3,12 +3,12 @@ kind: Deployment
 metadata:
   labels:
     application: [ApplicationName]-oauth2-proxy
-    app.kubernetes.io/managed-by: Helm
+    #app.kubernetes.io/managed-by: Helm #Enable if your core app is deployed with Helm
   name: [ApplicationName]-oauth2-proxy-deployment
   namespace: [ApplicationNamespace]
-  annotations:
-    meta.helm.sh/release-name: [ApplicationName]
-    meta.helm.sh/release-namespace: [ApplicationNamespace]
+  #annotations:
+    #meta.helm.sh/release-name: [ApplicationName] #Enable if your core app is deployed with Helm
+    #meta.helm.sh/release-namespace: [ApplicationNamespace] #Enable if your core app is deployed with Helm
 spec:
   replicas: 1
   selector:
@@ -64,12 +64,12 @@ kind: Service
 metadata:
   labels:
     application: [ApplicationName]-oauth2-proxy
-    app.kubernetes.io/managed-by: Helm
+    #app.kubernetes.io/managed-by: Helm #Enable if your core app is deployed with Helm
   name: [ApplicationName]-oauth2-proxy-svc
   namespace: [ApplicationNamespace]
-  annotations:
-    meta.helm.sh/release-name: [ApplicationName]
-    meta.helm.sh/release-namespace: [ApplicationNamespace]
+  #annotations:
+    #meta.helm.sh/release-name: [ApplicationName] #Enable if your core app is deployed with Helm
+    #meta.helm.sh/release-namespace: [ApplicationNamespace] #Enable if your core app is deployed with Helm
 spec:
   ports:
   - name: http
@@ -85,12 +85,12 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     cert-manager.io/cluster-issuer: [CertClusterIssuerName]
-    meta.helm.sh/release-name: [ApplicationName]
-    meta.helm.sh/release-namespace: [ApplicationNamespace]
+    #meta.helm.sh/release-name: [ApplicationName] #Enable if your core app is deployed with Helm
+    #meta.helm.sh/release-namespace: [ApplicationNamespace] #Enable if your core app is deployed with Helm
   name: [ApplicationName]-oauth2-ingress
   namespace: [ApplicationNamespace]
-  labels:
-    app.kubernetes.io/managed-by: Helm
+  #labels:
+    #app.kubernetes.io/managed-by: Helm #Enable if your core app is deployed with Helm
 spec:
   ingressClassName: nginx
   tls:
