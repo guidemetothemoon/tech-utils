@@ -35,7 +35,7 @@ spec:
             c := input_containers[_]
             not input_container_excluded(c.name)
             not is_excluded(c)
-            c.image := "k8s.gcr.io"
+            c.image := contains(k8s.gcr.io)
             msg := sprintf("k8s.gcr.io container image registry is deprecated - use registry.k8s.io! Name: %v, image: %v", [c.name, c.image])
         }
 
