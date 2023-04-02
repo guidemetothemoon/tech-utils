@@ -35,7 +35,7 @@
         }
       }
     },
-    "id": "/subscriptions/SUBSCIPTION_ID/providers/Microsoft.Authorization/policyDefinitions/POLICY_DEFINITION_ID",
+    "id": "/subscriptions/SUBSCRIPTION_ID/providers/Microsoft.Authorization/policyDefinitions/POLICY_DEFINITION_ID",
     "type": "Microsoft.Authorization/policyDefinitions",
     "name": "POLICY_DEFINITION_ID",
     "systemData": {
