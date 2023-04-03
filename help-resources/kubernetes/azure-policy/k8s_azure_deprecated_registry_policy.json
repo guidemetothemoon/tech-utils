@@ -6,10 +6,7 @@
       "description": "Do not allow containers to depend upon deprecated image registries like gcr.k8s.io\nRead for more information: https://kubernetes.io/blog/2023/03/10/image-registry-redirect/",
       "metadata": {
         "category": "Kubernetes",
-        "createdBy": "REDACTED",
-        "createdOn": "REDACTED",
-        "updatedBy": null,
-        "updatedOn": null
+        "version": "1.0.0"
       },
       "parameters": {
         "effect": {
@@ -104,16 +101,6 @@
           }
         }
       }
-    },
-    "id": "/subscriptions/[SUBSCRIPTION_ID]/providers/Microsoft.Authorization/policyDefinitions/[POLICY_DEFINITION_ID]",
-    "type": "Microsoft.Authorization/policyDefinitions",
-    "name": "[POLICY_DEFINITION_ID]",
-    "systemData": {
-      "createdBy": "REDACTED",
-      "createdByType": "User",
-      "createdAt": "REDACTED",
-      "lastModifiedBy": "REDACTED",
-      "lastModifiedByType": "User",
-      "lastModifiedAt": "REDACTED"
-    }
+    },    
+    "type": "Microsoft.Authorization/policyDefinitions"
   }

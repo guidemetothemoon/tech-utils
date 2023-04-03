@@ -1,3 +1,4 @@
+# Based upon templates from AWS EKS Best Practices repository: https://github.com/aws/aws-eks-best-practices/tree/master/policies/k8s-registry-deprecation/gatekeeper
 apiVersion: templates.gatekeeper.sh/v1beta1
 kind: ConstraintTemplate
 metadata:
