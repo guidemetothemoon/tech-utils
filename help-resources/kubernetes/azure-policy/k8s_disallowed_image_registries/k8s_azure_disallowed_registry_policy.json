@@ -1,106 +1,96 @@
 {
-    "properties": {
-      "displayName": "Kubernetes clusters should not allow legacy image registries",
-      "policyType": "Custom",
-      "mode": "Microsoft.Kubernetes.Data",
-      "description": "Do not allow containers to depend upon deprecated image registries like gcr.k8s.io\nRead for more information: https://kubernetes.io/blog/2023/03/10/image-registry-redirect/",
+  "mode": "Microsoft.Kubernetes.Data",
+  "parameters": {
+    "effect": {
+      "type": "String",
       "metadata": {
-        "category": "Kubernetes",
-        "version": "1.0.0"
+        "displayName": "Effect",
+        "description": "'Audit' allows a non-compliant resource to be created or updated, but flags it as non-compliant. 'Deny' blocks the non-compliant resource creation or update. 'Disabled' turns off the policy.",
+        "portalReview": true
       },
-      "parameters": {
-        "effect": {
-          "type": "String",
-          "metadata": {
-            "displayName": "Effect",
-            "description": "'Audit' allows a non-compliant resource to be created or updated, but flags it as non-compliant. 'Deny' blocks the non-compliant resource creation or update. 'Disabled' turns off the policy.",
-            "portalReview": true
-          },
-          "allowedValues": [
-            "Audit",
-            "Deny",
-            "Disabled"
-          ],
-          "defaultValue": "Audit"
-        },
-        "excludedNamespaces": {
-          "type": "Array",
-          "metadata": {
-            "displayName": "Namespace exclusions",
-            "description": "List of Kubernetes namespaces to exclude from policy evaluation. System namespaces \"kube-system\", \"gatekeeper-system\" and \"azure-arc\" are always excluded by design."
-          },
-          "defaultValue": [
-            "kube-system",
-            "gatekeeper-system",
-            "azure-arc"
-          ]
-        },
-        "allowedOps": {
-          "type": "Array",
-          "metadata": {
-            "displayName": "Allowed operations",
-            "description": "List of allowed Kubernetes operations."
-          },
-          "defaultValue": [
-            "CREATE",
-            "UPDATE"
-          ]
-        },
-        "deniedRegistries": {
-          "type": "Array",
-          "metadata": {
-            "displayName": "Denied image registries",
-            "description": "List of invalid image registries."
-          },
-          "defaultValue": [
-            "k8s.gcr.io"
-          ]
-        },
-        "errMsg": {
-          "type": "String",
-          "metadata": {
-            "displayName": "Error message",
-            "description": "Error message thrown in case of policy violation."
-          },
-          "defaultValue": "INVALID_REGISTRY"
-        }
+      "allowedValues": [
+        "Audit",
+        "Deny",
+        "Disabled"
+      ],
+      "defaultValue": "Audit"
+    },
+    "excludedNamespaces": {
+      "type": "Array",
+      "metadata": {
+        "displayName": "Namespace exclusions",
+        "description": "List of Kubernetes namespaces to exclude from policy evaluation. System namespaces \"kube-system\", \"gatekeeper-system\" and \"azure-arc\" are always excluded by design."
       },
-      "policyRule": {
-        "if": {
-          "field": "type",
-          "in": [
-            "Microsoft.Kubernetes/connectedClusters",
-            "Microsoft.ContainerService/managedClusters"
-          ]
+      "defaultValue": [
+        "kube-system",
+        "gatekeeper-system",
+        "azure-arc"
+      ]
+    },
+    "allowedOps": {
+      "type": "Array",
+      "metadata": {
+        "displayName": "Allowed operations",
+        "description": "List of allowed Kubernetes operations."
+      },
+      "defaultValue": [
+        "CREATE",
+        "UPDATE"
+      ]
+    },
+    "deniedRegistries": {
+      "type": "Array",
+      "metadata": {
+        "displayName": "Denied image registries",
+        "description": "List of invalid image registries."
+      },
+      "defaultValue": [
+        "k8s.gcr.io"
+      ]
+    },
+    "errMsg": {
+      "type": "String",
+      "metadata": {
+        "displayName": "Error message",
+        "description": "Error message thrown in case of policy violation."
+      },
+      "defaultValue": "INVALID_REGISTRY"
+    }
+  },
+  "policyRule": {
+    "if": {
+      "field": "type",
+      "in": [
+        "Microsoft.Kubernetes/connectedClusters",
+        "Microsoft.ContainerService/managedClusters"
+      ]
+    },
+    "then": {
+      "effect": "[parameters('effect')]",
+      "details": {
+        "templateInfo": {
+          "sourceType": "PublicURL",
+          "url": "https://raw.githubusercontent.com/guidemetothemoon/div-dev-resources/main/help-resources/kubernetes/azure-policy/k8s_disallowed_image_registries/k8s_azure_disallowed_registry_ct.yaml"
         },
-        "then": {
-          "effect": "[parameters('effect')]",
-          "details": {
-            "templateInfo": {
-              "sourceType": "PublicURL",
-              "url": "https://raw.githubusercontent.com/guidemetothemoon/div-dev-resources/main/help-resources/kubernetes/azure-policy/k8s_disallowed_image_registries/k8s_azure_disallowed_registry_ct.yaml"
-            },
-            "apiGroups": [
-              ""
-            ],
-            "kinds": [
-              "Pod",
-              "Deployment",
-              "DaemonSet",
-              "Job",
-              "CronJob",
-              "StatefulSet",
-              "ReplicaSet"
-            ],
-            "excludedNamespaces": "[parameters('excludedNamespaces')]",
-            "values": {
-              "allowedOps": "[parameters('allowedOps')]",
-              "deniedRegistries": "[parameters('deniedRegistries')]",
-              "errMsg": "[parameters('errMsg')]"
-            }
-          }
+        "apiGroups": [
+          ""
+        ],
+        "kinds": [
+          "Pod",
+          "Deployment",
+          "DaemonSet",
+          "Job",
+          "CronJob",
+          "StatefulSet",
+          "ReplicaSet"
+        ],
+        "excludedNamespaces": "[parameters('excludedNamespaces')]",
+        "values": {
+          "allowedOps": "[parameters('allowedOps')]",
+          "deniedRegistries": "[parameters('deniedRegistries')]",
+          "errMsg": "[parameters('errMsg')]"
         }
       }
-    },    
-    "type": "Microsoft.Authorization/policyDefinitions"
+    }
   }
+}
