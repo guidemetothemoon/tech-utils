@@ -78,7 +78,7 @@
           "details": {
             "templateInfo": {
               "sourceType": "PublicURL",
-              "url": "https://raw.githubusercontent.com/guidemetothemoon/div-dev-resources/main/help-resources/kubernetes/azure-policy/k8s_azure_deprecated_registry_ct.yaml"
+              "url": "https://raw.githubusercontent.com/guidemetothemoon/div-dev-resources/main/help-resources/kubernetes/azure-policy/k8s_disallowed_image_registries/k8s_azure_disallowed_registry_ct.yaml"
             },
             "apiGroups": [
               ""

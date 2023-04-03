@@ -2,12 +2,12 @@
 apiVersion: templates.gatekeeper.sh/v1beta1
 kind: ConstraintTemplate
 metadata:
-  name: k8sazuredeprecatedregistry
+  name: k8sazuredisallowedregistry
 spec:
   crd:
     spec:
       names:
-        kind: K8sAzureDeprecatedRegistry
+        kind: K8sAzureDisallowedRegistry
       validation:
         # Schema for the `parameters` field
         openAPIV3Schema:
@@ -27,7 +27,7 @@ spec:
     - target: admission.k8s.gatekeeper.sh
       rego: |
 
-        package k8sazuredeprecatedregistry
+        package k8sazuredisallowedregistry
       
         import future.keywords.in
       
@@ -38,7 +38,7 @@ spec:
           name := input.review.object.spec.containers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # Pod initContainers
@@ -48,7 +48,7 @@ spec:
           name := input.review.object.spec.initContainers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # Pod ephemeralContainers
@@ -58,7 +58,7 @@ spec:
           name := input.review.object.spec.ephemeralContainers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # CronJob containers
@@ -68,7 +68,7 @@ spec:
           name := input.review.object.spec.jobTemplate.spec.containers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # CronJob initContainers
@@ -78,7 +78,7 @@ spec:
           name := input.review.object.spec.jobTemplate.spec.initContainers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # CronJob ephemeralContainers
@@ -88,7 +88,7 @@ spec:
           name := input.review.object.spec.jobTemplate.spec.ephemeralContainers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # Workload containers
@@ -98,7 +98,7 @@ spec:
           name := input.review.object.spec.template.spec.containers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # Workload initContainers
@@ -108,7 +108,7 @@ spec:
           name := input.review.object.spec.template.spec.initContainers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         # Workload ephemeralContainers
@@ -118,7 +118,7 @@ spec:
           name := input.review.object.spec.template.spec.ephemeralContainers[_].name
           badRegs := input.parameters.deniedRegistries
           reg_matches_any(image, badRegs) = true
-          msg = sprintf("%v: Container=%v, Image=%v. The \"k8s.gcr.io\" image registry is deprecated. \"registry.k8s.io\" should now be used. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
+          msg = sprintf("%v: Container=%v, Image=%v. The image is using disallowed image registry. Please change to an image from a valid registry. Resource ID (ns/name/kind): %v/%v/%v",[input.parameters.errMsg, name, image, input.review.object.metadata.namespace, input.review.object.metadata.name, input.review.kind.kind])
         }
       
         reg_matches_any(str, patterns) {
