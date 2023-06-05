@@ -24,7 +24,7 @@ foreach($appPool in $formattedAppPools)
 {
     Write-Output "Adding $appPool to $groupName"
     
-    # Below block is re-used from https://stackoverflow.com/a/25279322
+    # Below block originates from: https://stackoverflow.com/a/25279322
     $ntAccount = New-Object System.Security.Principal.NTAccount($appPool)
     $strSID = $ntAccount.Translate([System.Security.Principal.SecurityIdentifier])
     $user = [ADSI]"WinNT://$strSID"
