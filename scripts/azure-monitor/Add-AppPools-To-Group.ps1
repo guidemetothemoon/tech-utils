@@ -12,7 +12,7 @@ $appPools = (Get-IISAppPool).Name
 
 $formattedAppPools = New-Object System.Collections.ArrayList
 $groupName = "Performance Monitor Users"
-$group = [ADSI]"WinNT://$Env:ComputerName/$groupName,group"
+$groupMembers = (Get-LocalGroupMember $groupName).Name
 
 foreach($ap in $appPools)
 {
@@ -22,11 +22,19 @@ foreach($ap in $appPools)
 
 foreach($appPool in $formattedAppPools)
 {
-    Write-Output "Adding $appPool to $groupName"
-    
-    # Below block originates from: https://stackoverflow.com/a/25279322
-    $ntAccount = New-Object System.Security.Principal.NTAccount($appPool)
-    $strSID = $ntAccount.Translate([System.Security.Principal.SecurityIdentifier])
-    $user = [ADSI]"WinNT://$strSID"
-    $group.Add($user.Path)
+    if($groupMembers -contains $appPool)
+    {
+        Write-Verbose "$appPool is already a member of $groupName - skipping..."
+        continue
+    }
+   
+    Write-Verbose "Adding $appPool to $groupName"
+	Add-LocalGroupMember -Group $groupName -Member $appPool
 }
+
+# Comment below section if you don't want to perform restart of IIS services as part of the script
+Write-Verbose "All accounts added - executing IISRESET..."
+iisreset
+
+Write-Verbose "Success!"
+exit 0
