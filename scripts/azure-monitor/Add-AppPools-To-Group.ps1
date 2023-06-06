@@ -1,5 +1,5 @@
 # This script is related to following blog post on resolving issues with collecting performance
-# counters for Application Insights from ASP.NET applications: [TODO]
+# counters for Application Insights from ASP.NET applications: https://kristhecodingunicorn.com/post/appinsights_perfcounters
 # It will retrieve existing IIS application pools, filter out entries if applicable, and add them
 # to the provided Windows local group.
 
