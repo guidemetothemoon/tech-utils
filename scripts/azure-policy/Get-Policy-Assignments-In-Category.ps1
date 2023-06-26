@@ -41,8 +41,8 @@ foreach ($pa in $policyAssignments)
         $policyAssignmentsOutput.Add(
             @(
                 @{
-                    PolicyAssignmentId = $pa.id
-                    PolicyAssignmentName = $pa.Name
+                    PolicyDefinitionId = $pa.id
+                    PolicyDefinitionName = $pa.Name
                 }
             )
         ) > $null
@@ -60,8 +60,8 @@ foreach($psdp in $policySetDefinitionPolicies)
             $policyAssignmentsOutput.Add(
                 @(
                     @{
-                        PolicyAssignmentId = $psdpid
-                        PolicyAssignmentName = $policyName
+                        PolicyDefinitionId = $psdpid
+                        PolicyDefinitionName = $policyName
                         PolicyInitiativeId = $psdp.AssignmentId
                         PolicyInitiativeName = $psdp.AssignmentName
                     }
@@ -77,5 +77,5 @@ if($policyAssignmentsOutput.Count -eq 0)
 }
 else
 {
-    $policyAssignmentsOutput | ForEach-Object { $_ | Format-Table }
+    $policyAssignmentsOutput | ForEach-Object { $_ | Select-Object PolicyDefinitionId, PolicyDefinitionName, PolicyInitiativeId, PolicyInitiativeName | Format-List }
 }
