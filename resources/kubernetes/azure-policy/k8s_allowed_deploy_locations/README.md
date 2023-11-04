@@ -1,8 +1,10 @@
+# Azure Policy definition to whitelist deployment locations
+
 A custom Azure Policy definition to allow deployment of AKS clusters only to whitelisted locations, like for example "northeurope".
 
 Policy Metadata for reference:
 
-```
+``` json
 "properties": {
   "displayName": "Create AKS clusters only in North Europe",
   "policyType": "Custom",

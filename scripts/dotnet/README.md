@@ -1,3 +1,5 @@
+# .NET
+
 This folder contains a collection of scripts that can be helpful for .NET application development.
 
 ```Update-DotnetFramework.ps1```
@@ -9,14 +11,12 @@ See more information in this blog post: [Automate .NET Target Framework Update W
 
 You can execute the script like this:
 
-1. Add new .NET target frameworks in current location: 
-
+1. Add new .NET target frameworks in current location:
 ```.\Update-DotnetFramework.ps1 -FrameworksToAdd net6.0,net7.0```
 
-2. Add new .NET target framework and remove existing framework in current location: 
-
+2. Add new .NET target framework and remove existing framework in current location:
 ```.\Update-DotnetFramework.ps1 -FrameworksToAdd net6.0-windows -FrameworksToRemove netcoreapp3.1,net5.0```
 
-3. Add new .NET target framework for projects in ```C:/my-repo/my-projects-dir``` folder, excluding test and VB projects: 
+3. Add new .NET target framework for projects in ```C:/my-repo/my-projects-dir``` folder, excluding test and VB projects:
 
 ```.\Update-DotnetFramework.ps1 -FrameworksToAdd net6.0 -ProjectsToExclude *.Test*,*`.vbproj -ProjectLocation "C:/my-repo/my-projects-dir"```

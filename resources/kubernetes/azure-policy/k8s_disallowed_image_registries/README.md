@@ -1,8 +1,10 @@
+# Azure Policy definition to blacklist image registries
+
 A custom Azure Policy definition to disallow Kubernetes workloads that are referencing disallowed/blacklisted image registries, like for example "k8s.gcr.io".
 
 Policy Metadata for reference:
 
-```
+``` json
 "properties": {
   "displayName": "Kubernetes clusters should not allow legacy image registries",
   "policyType": "Custom",
