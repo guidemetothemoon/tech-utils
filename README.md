@@ -1,2 +1,3 @@
-# div-dev-resources
-Scripts, demo projects, etc. used for development, presentations, demos++
+# Technical utilities
+
+This repository contains a collection of different utilities and helpful resources like scripts, cheatsheets, etc., across different areas.
